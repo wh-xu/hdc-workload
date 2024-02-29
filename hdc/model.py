@@ -8,6 +8,9 @@ import tqdm
 torch.manual_seed(0)
 
 
+def binarize(x):
+    return torch.where(x>0, 1, -1).int()
+    
 def min_max_quantize(inp, bits):
     assert bits >= 1, bits
     if bits == 1:
@@ -24,22 +27,22 @@ def min_max_quantize(inp, bits):
     return v.int()
 
 
-def train_init(model, inp_enc, target, binary=True):
+def train_init(model, inp_enc, target):
     assert inp_enc.shape[0] == target.shape[0]
 
     for i in range(model.n_class):
         idx = target == i
         model.class_hvs[i] = (
-            inp_enc[idx].sum(dim=0).sign() if binary else inp_enc[idx].sum(dim=0)
+            binarize(inp_enc[idx].sum(dim=0)) if model.binary else inp_enc[idx].sum(dim=0)
         )
 
 
-def test(model, inp_enc, target, binary=True):
+def test(model, inp_enc, target):
     assert inp_enc.shape[0] == target.shape[0]
 
     # Distance matching
-    if binary:
-        dist = torch.matmul(inp_enc, model.class_hvs.sign().T)
+    if model.binary:
+        dist = torch.matmul(inp_enc, binarize(model.class_hvs).T)
     else:
         dist = torch.matmul(inp_enc, model.class_hvs.T)
         dist = dist / model.class_hvs.float().norm(dim=1)
@@ -56,7 +59,16 @@ def train(model, inp_enc, target):
     n_samples = inp_enc.shape[0]
 
     for j in range(n_samples):
-        pred = torch.matmul(inp_enc[j], model.class_hvs.T).argmax()
+        # Distance matching
+        if model.binary:
+            pred = torch.matmul(inp_enc[j], binarize(model.class_hvs).T).argmax()
+        else:
+            dist = torch.matmul(inp_enc[j], model.class_hvs.T)
+            dist = dist / model.class_hvs.float().norm(dim=1)
+            pred = dist.argmax()
+            
+        # if model.binary:
+            # pred = torch.matmul(inp_enc[j], model.class_hvs.T).argmax()
 
         if pred != target[j]:
             model.class_hvs[target[j]] += inp_enc[j]
@@ -81,8 +93,6 @@ class HDC_ID_LV:
         inp_enc = torch.zeros(n_batch, self.n_dim, dtype=torch.int)
         for i in tqdm.tqdm(range(n_batch)):
             # Vectorized version
-            # print(self.hv_lv.shape)
-            # print(self.hv_lv[inp[i].long()].shape)
             inp_enc[i] = (self.hv_id * self.hv_lv[inp[i].long()]).sum(dim=0)
 
             # Serial version
@@ -91,7 +101,7 @@ class HDC_ID_LV:
             # tmp = tmp + (self.hv_id[j] * self.hv_lv[inp_quant[i][j]])
             # inp_enc[i] = tmp
 
-        return inp_enc.sign().int() if self.binary else inp_enc
+        return binarize(inp_enc).int() if self.binary else inp_enc
 
 
 class HDC_RP:
@@ -106,4 +116,4 @@ class HDC_RP:
         assert inp.shape[1] == self.n_feat
 
         inp_enc = torch.matmul(inp, self.rp)
-        return inp_enc.sign().int() if self.binary else inp_enc
+        return binarize(inp_enc).int() if self.binary else inp_enc
