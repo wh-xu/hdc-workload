@@ -8,8 +8,8 @@ from hdc import utils
 
 # %%
 # ds_train, ds_test = utils.load_dataset(name="MNIST")
-ds_train, ds_test = utils.load_dataset(name="EMG_Hand")
-# ds_train, ds_test = utils.load_dataset(name="UCIHAR")
+# ds_train, ds_test = utils.load_dataset(name="EMG_Hand")
+ds_train, ds_test = utils.load_dataset(name="UCIHAR")
 # ds_train, ds_test = utils.load_dataset(name="ISOLET")
 
 n_dim = 2048 # Dimension can be from 1k to 16k

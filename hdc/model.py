@@ -67,7 +67,7 @@ def train(model, inp_enc, target):
             pred = torch.matmul(inp_enc[j], binarize(model.class_hvs).T).argmax()
         else:
             dist = torch.matmul(inp_enc[j], model.class_hvs.T)
-            dist = dist / model.class_hvs.float().norm(dim=1)
+            # dist = dist / model.class_hvs.float().norm(dim=1)
             pred = dist.argmax()
 
         # if model.binary:
