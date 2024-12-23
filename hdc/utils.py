@@ -7,6 +7,34 @@ import torchvision
 DATASETS = ["MNIST", "ISOLET", "EMG_Hand", "UCIHAR", "OMS_iPRG_demo"]
 
 
+hdc_query_list = [
+    "b1906_293T_proteinID_01A_QE3_122212",
+    "b1922_293T_proteinID_02A_QE3_122212",
+    "b1923_293T_proteinID_03A_QE3_122212",
+    "b1924_293T_proteinID_04A_QE3_122212",
+    "b1925_293T_proteinID_05A_QE3_122212",
+    "b1926_293T_proteinID_06A_QE3_122212",
+    "b1927_293T_proteinID_07A_QE3_122212",
+    "b1928_293T_proteinID_08A_QE3_122212",
+    "b1929_293T_proteinID_09A_QE3_122212",
+    "b1930_293T_proteinID_10A_QE3_122212",
+    "b1931_293T_proteinID_11A_QE3_122212",
+    "b1932_293T_proteinID_12A_QE3_122212",
+    "b1937_293T_proteinID_01B_QE3_122212",
+    "b1938_293T_proteinID_02B_QE3_122212",
+    "b1939_293T_proteinID_03B_QE3_122212",
+    "b1940_293T_proteinID_04B_QE3_122212",
+    "b1941_293T_proteinID_05B_QE3_122212",
+    "b1942_293T_proteinID_06B_QE3_122212",
+    "b1943_293T_proteinID_07B_QE3_122212",
+    "b1944_293T_proteinID_08B_QE3_122212",
+    "b1945_293T_proteinID_09B_QE3_122212",
+    "b1946_293T_proteinID_10B_QE3_122212",
+    "b1947_293T_proteinID_11B_QE3_122212",
+    "b1948_293T_proteinID_12B_QE3_122212",
+]
+
+
 def load_dataset(name, path=None):
     """
     Load dataset by name
@@ -83,4 +111,3 @@ def load_dataset(name, path=None):
         }
 
     return data_train, data_test
-

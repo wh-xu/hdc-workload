@@ -7,11 +7,30 @@ from hdc import utils
 
 
 # %% Load Mass Spec. Dataset
-dim_spectra = 34976
 charge = 2
 
-ref_fname = f"./dataset/human_yeast_targetdecoy_vec_{dim_spectra}.charge{charge}.npz"
-query_fname = f"./dataset/iPRG2012_vec_{dim_spectra}.charge{charge}.npz"
+# ref_dataset = "iprg"  # benchmark the small iPRG2012 dataset
+ref_dataset = "hcd"  # benchmark the large Massive Human HCD dataset
+
+# Just pick up a subset for quick evaluation
+n_ref_test = 1000
+n_query_test = 10
+# topk results to search
+topk = 5
+
+if ref_dataset == "iprg":
+    dim_spectra = 34976
+    ref_fname = (
+        f"./dataset/human_yeast_targetdecoy_vec_{dim_spectra}.charge{charge}.npz"
+    )
+    query_fname = f"./dataset/iPRG2012_vec_{dim_spectra}.charge{charge}.npz"
+elif ref_dataset == "hcd":
+    dim_spectra = 27981
+    query_idx = 0  # pick one of the query files to test
+    ref_fname = f"./dataset/oms/ref/massive_human_hcd_unique_targetdecoy_vec_{dim_spectra}.charge{charge}.npz"
+    query_fname = f"./dataset/oms/query/{utils.hdc_query_list[query_idx]}_vec_{dim_spectra}.charge{charge}.npz"
+else:
+    raise NotImplementedError("Dataset not implemented")
 
 ds_ref, ds_query = utils.load_dataset(
     name="OMS_iPRG_demo", path=[ref_fname, query_fname]
@@ -49,23 +68,33 @@ ds_query_idxs = torch.tensor(ds_query["idxs"])
 
 
 # %% HDC Encoding Step for Database Pre-building
-n_test = 100
 ref_enc = hdc_model.encode(
-    {"lv": ds_ref_levels_quantized[:n_test], "idx": ds_ref_idxs[:n_test]}, dense=False
-)  # Just pick up a few samples for quick evaluation
+    {"lv": ds_ref_levels_quantized[:n_ref_test], "idx": ds_ref_idxs[:n_ref_test]},
+    dense=False,
+)
 
 # %% HDC Encoding Step for Querying
-n_query = 5
 query_enc = hdc_model.encode(
-    {"lv": ds_query_levels_quantized[:n_test], "idx": ds_query_idxs[:n_test]},
+    {
+        "lv": ds_query_levels_quantized[:n_query_test],
+        "idx": ds_query_idxs[:n_query_test],
+    },
     dense=False,
-)  # Just pick up a few samples for quick evaluation
-
+)
 
 # %% Database Search
-dist = torch.matmul(query_enc, ref_enc.T)
-if hdc_model.binary:
-    pred = dist.argmax(dim=-1)
-else:
-    dist = dist / ref_enc.float().norm(dim=1)
-    pred = dist.argmax(dim=-1)
+ip = torch.matmul(query_enc, ref_enc.T)
+if not hdc_model.binary:
+    dist = ip / ref_enc.float().norm(dim=1)
+sim, pred = torch.topk(ip, topk, dim=-1)
+
+print(
+    f"###############################################################################"
+)
+print(
+    f"{n_ref_test} of {n_ref} references and {n_query_test} of {n_query} queries are used for testing"
+)
+print("Topk index results:\n", pred, "\nwith similarity\n", sim)
+print(
+    f"###############################################################################"
+)
